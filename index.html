@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jejak Emas Ramadan: Misi Kebaikan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Menggunakan Font bergaya Game Edukasi -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Optimasi IFP & Layar Sentuh */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Fredoka', sans-serif;
+            color: white;
+            overflow: hidden;
+            background-color: #0f172a;
+        }
+        
+        /* Background Utama Game */
+        .bg-ramadan {
+            background-image: url('https://i.imgur.com/MweeHO9.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0; left: 0;
+        }
+        .screen.active {
+            display: flex;
+        }
+        .btn-ifp {
+            transition: all 0.1s ease-in-out;
+            cursor: pointer;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.4);
+        }
+        .btn-ifp:active {
+            transform: translateY(8px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.4);
+        }
+        .btn-ifp:disabled {
+            filter: grayscale(100%);
+            cursor: not-allowed;
+            box-shadow: 0 0 0 rgba(0,0,0,0);
+            transform: translateY(8px);
+        }
+        
+        /* Custom Scrollbar untuk Modal (IFP) */
+        .custom-scroll::-webkit-scrollbar { width: 12px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; border: 2px solid #1e293b; }
+        
+        .text-shadow { text-shadow: 3px 3px 6px rgba(0,0,0,0.8); }
+        .text-shadow-sm { text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.1); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        
+        @keyframes pulse-border {
+            0% { border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            50% { border-color: rgba(96, 165, 250, 1); box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+            100% { border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .animate-turn { animation: pulse-border 2s infinite; }
+
+        .mission-locked { filter: grayscale(100%) opacity(0.7); transition: all 0.3s; }
+        .mission-unlocked { filter: grayscale(0%) opacity(1); animation: bounceIn 0.5s; box-shadow: 0 0 30px #fbbf24; border-color: #fbbf24;}
+        
+        #feedback-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 60;
+            display: none; justify-content: center; align-items: center; flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- AUDIO GENERATOR -->
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        function soundCoin() { playTone(1200, 'sine', 0.1); setTimeout(() => playTone(1600, 'sine', 0.2), 100); }
+        function soundWrong() { playTone(300, 'sawtooth', 0.3); setTimeout(() => playTone(250, 'sawtooth', 0.4), 150); }
+        function soundBuild() { [440, 554.37, 659.25, 880].forEach((f, i) => setTimeout(() => playTone(f, 'square', 0.3, 0.1), i * 150)); }
+        function soundWin() { [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, i) => setTimeout(() => playTone(f, 'square', 0.2, 0.05), i * 150)); }
+    </script>
+
+    <!-- Elemen Audio Musik Latar -->
+    <audio id="bg-music" loop preload="auto">
+        <source src="https://github.com/belajarituseru39-gif/lagujejakramadan/raw/refs/heads/main/Jejak%20Emas%20Ramadan.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- 1. LANDING PAGE -->
+    <div id="screen-landing" class="screen active bg-ramadan relative">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]"></div> <!-- Overlay -->
+        
+        <!-- Utility Buttons -->
+        <div class="absolute top-6 right-6 lg:top-8 lg:right-8 z-20 flex gap-4">
+            <button onclick="toggleMusic()" class="btn-ifp bg-slate-800/80 text-white w-14 h-14 lg:w-16 lg:h-16 rounded-xl border-4 border-slate-400 flex items-center justify-center text-2xl lg:text-3xl shadow-lg backdrop-blur-sm" title="Musik Latar">
+                <i class="music-icon fa-solid fa-volume-xmark"></i>
+            </button>
+            <button onclick="toggleFullScreen()" class="btn-ifp bg-slate-800/80 text-white w-14 h-14 lg:w-16 lg:h-16 rounded-xl border-4 border-slate-400 flex items-center justify-center text-2xl lg:text-3xl shadow-lg backdrop-blur-sm" title="Layar Penuh">
+                <i class="fs-icon fa-solid fa-expand"></i>
+            </button>
+        </div>
+
+        <div class="z-10 flex flex-col items-center justify-between w-full h-full p-4 lg:p-6 overflow-y-auto custom-scroll">
+            
+            <div class="flex-grow flex flex-col items-center justify-center w-full max-w-6xl mt-2 lg:mt-4">
+                
+                <!-- Logo Game (Ukurannya Diperkecil Agar Presisi) -->
+                <img src="https://i.imgur.com/4pT1lF7.png" alt="Logo Game" class="w-auto max-h-[15vh] md:max-h-[20vh] lg:max-h-[25vh] object-contain drop-shadow-2xl animate-float mb-2">
+                
+                <!-- Judul Game -->
+                <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold text-yellow-400 text-shadow mb-1 text-center tracking-wide leading-tight">Jejak Emas Ramadan</h1>
+                <h2 class="text-xl md:text-3xl lg:text-4xl font-semibold text-white text-shadow mb-4 lg:mb-6 text-center">Misi Kebaikan</h2>
+                
+                <!-- Narasi Permainan -->
+                <div class="bg-slate-900/70 p-4 md:p-6 lg:p-8 rounded-3xl border-2 border-slate-400 shadow-xl backdrop-blur-md mb-4 lg:mb-6 w-full md:w-5/6 text-center">
+                    <p class="text-base md:text-xl lg:text-2xl text-blue-100 leading-relaxed text-shadow-sm font-medium">
+                        "Selamat datang, Pahlawan Kebaikan! Warga desa sangat membutuhkan bantuanmu di bulan suci ini. Uji pengetahuanmu untuk mengumpulkan kepingan emas, dan bangun fasilitas penting bagi umat. Mari berlomba dalam kebaikan!"
+                    </p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                    <button onclick="goToPlayerSetup()" class="btn-ifp bg-green-500 hover:bg-green-400 text-white font-bold py-3 lg:py-4 px-6 lg:px-10 rounded-full text-xl lg:text-3xl border-4 border-white shadow-xl animate-float">
+                        <i class="fa-solid fa-play mr-2"></i> Mulai Bermain
+                    </button>
+                    <button onclick="showScreen('screen-guide')" class="btn-ifp bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 lg:py-4 px-6 lg:px-10 rounded-full text-xl lg:text-3xl border-4 border-white shadow-xl">
+                        <i class="fa-solid fa-book-open mr-2"></i> Panduan
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-auto text-center w-full pt-2">
+                <p class="text-sm lg:text-lg text-blue-200 text-shadow-sm">Ide Permainan oleh:</p>
+                <p class="text-base lg:text-xl font-bold text-white text-shadow-sm">Abdul Rahmat, S.Pd (SDN 011 Balikpapan Tengah) - 081351767574</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1.5 PANDUAN BERMAIN SCREEN -->
+    <div id="screen-guide" class="screen bg-ramadan relative p-8">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md"></div> <!-- Overlay -->
+        
+        <div class="z-10 h-full flex flex-col items-center justify-center relative w-full max-w-6xl mx-auto">
+            
+            <div class="w-full flex justify-between items-center mb-6">
+                <button onclick="showScreen('screen-landing')" class="btn-ifp bg-red-600 hover:bg-red-500 text-white w-16 h-16 rounded-xl border-4 border-red-300 flex items-center justify-center text-3xl shadow-md" title="Kembali ke Beranda">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h2 class="text-5xl lg:text-6xl font-bold text-yellow-400 text-shadow flex-grow text-center">Panduan Bermain</h2>
+                <div class="w-16"></div>
+            </div>
+
+            <div class="bg-slate-800/90 w-full rounded-[3rem] border-8 border-blue-500 p-8 md:p-12 shadow-2xl overflow-y-auto max-h-[75vh] custom-scroll text-xl lg:text-3xl text-blue-100 leading-relaxed">
+                <ol class="list-decimal list-inside space-y-6">
+                    <li><strong class="text-white">Pilih Mode Pemain:</strong> Bermain sendiri atau berkolaborasi bergantian hingga 4 pemain. Pilih karakter favoritmu!</li>
+                    <li><strong class="text-white">Pilih Misi Pembangunan:</strong> Di Peta Misi, pilih bangunan yang ingin kamu dirikan (Masjid, Makan Bergizi, atau Madrasah). Misi dikerjakan secara berurutan.</li>
+                    <li><strong class="text-white">Kumpulkan Emas (Bergantian):</strong> Untuk membangun, kamu butuh Emas. Jika bermain kelompok, <strong class="text-yellow-300">jawablah soal secara bergantian</strong> sesuai giliran nama yang muncul di layar!</li>
+                    <li><strong class="text-white">Sistem Poin Emas:</strong> Jawab soal dengan teliti!
+                        <ul class="list-none ml-8 mt-4 space-y-3 bg-slate-900/50 p-6 rounded-2xl border-2 border-slate-600">
+                            <li>🎯 <strong class="text-yellow-300">Kelas 1 & 2:</strong> Benar <span class="text-green-400 font-bold">+10</span> | Salah <span class="text-red-400 font-bold">-5</span></li>
+                            <li>🎯 <strong class="text-yellow-300">Kelas 3 & 4:</strong> Benar <span class="text-green-400 font-bold">+15</span> | Salah <span class="text-red-400 font-bold">-5</span></li>
+                            <li>🎯 <strong class="text-yellow-300">Kelas 5 & 6:</strong> Benar <span class="text-green-400 font-bold">+20</span> | Salah <span class="text-red-400 font-bold">-5</span></li>
+                        </ul>
+                    </li>
+                    <li><strong class="text-white">Selesaikan Semua Misi:</strong> Kumpulkan <strong class="text-yellow-400">400 Emas</strong> untuk setiap bangunan. Bangun ketiganya dan menangkan permainannya bersama-sama!</li>
+                </ol>
+                
+                <div class="mt-12 text-center">
+                    <button onclick="showScreen('screen-landing')" class="btn-ifp bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold py-5 px-16 rounded-full text-3xl lg:text-4xl border-4 border-white shadow-xl">
+                        <i class="fa-solid fa-check mr-3"></i> Saya Mengerti!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1.8 PLAYER SETUP SCREEN -->
+    <div id="screen-player-setup" class="screen bg-ramadan relative p-8">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md"></div>
+        
+        <div class="z-10 h-full flex flex-col items-center justify-center relative w-full max-w-6xl mx-auto">
+            
+            <div class="w-full flex justify-between items-center mb-6">
+                <button onclick="goBackToLandingFromSetup()" class="btn-ifp bg-red-600 hover:bg-red-500 text-white w-16 h-16 rounded-xl border-4 border-red-300 flex items-center justify-center text-3xl shadow-md">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 text-shadow flex-grow text-center"><i class="fa-solid fa-users mr-3 text-white"></i> Persiapan Pemain</h2>
+                <div class="w-16"></div>
+            </div>
+
+            <div class="bg-slate-800/90 w-full rounded-[3rem] border-8 border-blue-500 p-8 md:p-12 shadow-2xl flex flex-col items-center text-center">
+                
+                <!-- Step 1: Pilih Jumlah Pemain -->
+                <div id="setup-step-count" class="w-full flex flex-col items-center animate-bounce-in">
+                    <h3 class="text-3xl lg:text-4xl font-bold text-white mb-8">Berapa orang pahlawan yang akan bermain?</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                        <button onclick="selectPlayerCount(1)" class="btn-ifp bg-indigo-600 hover:bg-indigo-500 text-white py-6 rounded-3xl border-4 border-indigo-300 shadow-xl flex flex-col items-center">
+                            <i class="fa-solid fa-user text-6xl mb-4 text-yellow-300"></i>
+                            <span class="text-3xl font-bold">1 Pemain</span>
+                        </button>
+                        <button onclick="selectPlayerCount(2)" class="btn-ifp bg-purple-600 hover:bg-purple-500 text-white py-6 rounded-3xl border-4 border-purple-300 shadow-xl flex flex-col items-center">
+                            <i class="fa-solid fa-user-group text-6xl mb-4 text-yellow-300"></i>
+                            <span class="text-3xl font-bold">2 Pemain</span>
+                            <span class="text-xl mt-2 bg-slate-900/50 px-4 py-1 rounded-full">(Kolaborasi)</span>
+                        </button>
+                        <button onclick="selectPlayerCount(3)" class="btn-ifp bg-pink-600 hover:bg-pink-500 text-white py-6 rounded-3xl border-4 border-pink-300 shadow-xl flex flex-col items-center">
+                            <i class="fa-solid fa-users text-6xl mb-4 text-yellow-300"></i>
+                            <span class="text-3xl font-bold">3 Pemain</span>
+                            <span class="text-xl mt-2 bg-slate-900/50 px-4 py-1 rounded-full">(Kolaborasi)</span>
+                        </button>
+                        <button onclick="selectPlayerCount(4)" class="btn-ifp bg-blue-600 hover:bg-blue-500 text-white py-6 rounded-3xl border-4 border-blue-300 shadow-xl flex flex-col items-center">
+                            <div class="flex text-6xl mb-4 text-yellow-300 gap-2"><i class="fa-solid fa-users"></i><i class="fa-solid fa-user"></i></div>
+                            <span class="text-3xl font-bold">4 Pemain</span>
+                            <span class="text-xl mt-2 bg-slate-900/50 px-4 py-1 rounded-full">(Kolaborasi)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Pilih Karakter -->
+                <div id="setup-step-char" class="w-full flex flex-col items-center hidden">
+                    <div class="bg-blue-600 border-4 border-blue-300 px-8 py-3 rounded-full mb-6 shadow-lg inline-block">
+                        <h3 class="text-3xl lg:text-4xl font-bold text-white"><span id="setup-player-title" class="text-yellow-300">Pemain 1</span>, Pilih Karaktermu!</h3>
+                    </div>
+                    
+                    <div id="char-selection-container" class="grid grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                        <!-- Karakter akan diinject via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAP SCREEN (MISI) -->
+    <div id="screen-map" class="screen bg-ramadan relative p-4 lg:p-6">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]"></div> <!-- Overlay -->
+        
+        <div class="z-10 h-full flex flex-col relative w-full max-w-[100vw]">
+            <!-- Header (Diperkecil margin & paddingnya) -->
+            <div class="flex flex-wrap justify-between items-center bg-blue-900/80 p-2 lg:p-3 rounded-3xl border-4 border-blue-400 mb-3 shadow-xl w-full">
+                <div class="flex items-center gap-3">
+                    <button onclick="goHome()" class="btn-ifp bg-red-600 hover:bg-red-500 text-white w-12 h-12 lg:w-14 lg:h-14 rounded-xl border-4 border-red-300 flex items-center justify-center text-xl lg:text-2xl shadow-md" title="Kembali ke Beranda">
+                        <i class="fa-solid fa-house"></i>
+                    </button>
+                    <h2 class="text-2xl lg:text-4xl font-bold text-white"><i class="fa-solid fa-map-location-dot mr-2 text-yellow-400"></i> Peta Misi Umat</h2>
+                </div>
+                <div class="flex items-center gap-3 mt-2 sm:mt-0">
+                    <div class="bg-slate-800 text-yellow-400 px-3 py-1 lg:px-5 lg:py-2 rounded-2xl text-2xl lg:text-4xl font-bold border-4 border-yellow-400 shadow-lg flex items-center">
+                        <img src="https://i.imgur.com/fGsPzlt.jpeg" alt="Koin Emas" class="w-6 h-6 lg:w-10 lg:h-10 inline-block rounded-full border-2 border-yellow-200 object-cover mr-2 shadow-sm">
+                        <span id="ui-gold">0</span> <span class="text-lg lg:text-2xl ml-2 text-white">Emas</span>
+                    </div>
+                    <button onclick="toggleMusic()" class="btn-ifp bg-slate-800 hover:bg-slate-700 text-white w-12 h-12 lg:w-14 lg:h-14 rounded-xl border-4 border-slate-500 flex items-center justify-center text-xl lg:text-2xl shadow-md" title="Musik Latar">
+                        <i class="music-icon fa-solid fa-volume-xmark"></i>
+                    </button>
+                    <button onclick="toggleFullScreen()" class="btn-ifp bg-slate-800 hover:bg-slate-700 text-white w-12 h-12 lg:w-14 lg:h-14 rounded-xl border-4 border-slate-500 flex items-center justify-center text-xl lg:text-2xl shadow-md" title="Layar Penuh">
+                        <i class="fs-icon fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Area Misi (Padding dan Gap Diperkecil) -->
+            <div class="flex-grow bg-slate-800/80 rounded-3xl border-4 border-slate-500 p-3 lg:p-4 flex flex-col items-center shadow-2xl relative min-h-0">
+                <h3 class="text-xl lg:text-3xl text-center text-green-400 font-bold mb-3 text-shadow w-full">Klik Misi Untuk Mengumpulkan Emas & Membangun</h3>
+                
+                <div class="flex flex-row w-full flex-grow justify-around items-stretch gap-3 lg:gap-5 px-1 pb-1 min-h-0">
+                    
+                    <!-- Misi 1 -->
+                    <div onclick="openMission('masjid')" class="btn-ifp flex flex-col flex-1 items-center bg-slate-700/70 p-3 lg:p-4 rounded-2xl border-4 border-slate-600 hover:bg-slate-600 min-h-0">
+                        <div id="img-masjid" class="mission-locked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-slate-500 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink">
+                            <img src="https://i.imgur.com/QpaKuwU.jpeg" class="w-full h-full object-contain p-1 lg:p-2" alt="Misi Bangun Masjid">
+                        </div>
+                        <h4 class="text-lg lg:text-2xl xl:text-3xl font-bold text-white mt-2 mb-2 text-center leading-tight">1. Bangun Masjid</h4>
+                        <div id="status-masjid" class="mt-auto bg-blue-600 text-white text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-white shadow-inner flex justify-center items-center">
+                            Butuh 400 <img src="https://i.imgur.com/fGsPzlt.jpeg" class="w-5 h-5 lg:w-6 lg:h-6 rounded-full ml-2 border border-yellow-300">
+                        </div>
+                    </div>
+
+                    <!-- Misi 2 -->
+                    <div onclick="openMission('makan')" class="btn-ifp flex flex-col flex-1 items-center bg-slate-700/70 p-3 lg:p-4 rounded-2xl border-4 border-slate-600 hover:bg-slate-600 min-h-0">
+                        <div id="img-makan" class="mission-locked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-slate-500 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink">
+                            <img src="https://i.imgur.com/H2v4qBz.jpeg" class="w-full h-full object-contain p-1 lg:p-2" alt="Misi Makan Bergizi">
+                        </div>
+                        <h4 class="text-lg lg:text-2xl xl:text-3xl font-bold text-white mt-2 mb-2 text-center leading-tight">2. Makan Bergizi</h4>
+                        <div id="status-makan" class="mt-auto bg-slate-600 text-gray-300 text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-slate-500 shadow-inner flex justify-center items-center">
+                            Terkunci
+                        </div>
+                    </div>
+
+                    <!-- Misi 3 -->
+                    <div onclick="openMission('sekolah')" class="btn-ifp flex flex-col flex-1 items-center bg-slate-700/70 p-3 lg:p-4 rounded-2xl border-4 border-slate-600 hover:bg-slate-600 min-h-0">
+                        <div id="img-sekolah" class="mission-locked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-slate-500 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink">
+                            <img src="https://i.imgur.com/SEDXrj3.jpeg" class="w-full h-full object-contain p-1 lg:p-2" alt="Misi Bangun Sekolah">
+                        </div>
+                        <h4 class="text-lg lg:text-2xl xl:text-3xl font-bold text-white mt-2 mb-2 text-center leading-tight">3. Madrasah/Sekolah</h4>
+                        <div id="status-sekolah" class="mt-auto bg-slate-600 text-gray-300 text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-slate-500 shadow-inner flex justify-center items-center">
+                            Terkunci
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MISI & PILIH KELAS -->
+    <div id="modal-mission" class="fixed inset-0 bg-slate-900/90 z-40 hidden flex-col justify-center items-center p-4 lg:p-8 backdrop-blur-md">
+        <div class="bg-slate-800 border-8 border-blue-500 rounded-[2rem] p-6 lg:p-8 w-full max-w-[95vw] lg:max-w-7xl max-h-[95vh] overflow-y-auto custom-scroll flex flex-col items-center relative shadow-2xl">
+            <button onclick="closeMissionModal()" class="absolute top-4 right-6 text-red-400 hover:text-red-300 text-5xl lg:text-6xl btn-ifp"><i class="fa-solid fa-circle-xmark"></i></button>
+            
+            <div id="modal-icon" class="mb-4"></div>
+            <h2 id="modal-title" class="text-4xl lg:text-5xl font-bold text-white mb-2 text-center">Nama Misi</h2>
+            <p id="modal-desc" class="text-xl lg:text-2xl text-gray-300 mb-6 text-center max-w-4xl">Deskripsi</p>
+            
+            <div id="modal-action-container" class="mb-6 w-full flex justify-center">
+                <!-- Action button injected by JS -->
+            </div>
+
+            <div class="w-full bg-slate-700/80 p-6 rounded-3xl border-4 border-slate-500 shadow-inner">
+                <h3 class="text-3xl lg:text-4xl text-yellow-300 font-bold mb-2 text-center text-shadow-sm"><i class="fa-solid fa-gamepad mr-2"></i> Kumpulkan Emas</h3>
+                <p class="text-lg lg:text-xl text-center text-white mb-6">Pilih kelas di bawah ini untuk menjawab soal. Semakin tinggi kelas, semakin besar hadiahnya!</p>
+                
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                    <button onclick="startLevel(1)" class="btn-ifp bg-indigo-900 hover:bg-indigo-800 text-white p-4 rounded-3xl flex flex-col items-center border-4 border-indigo-400 shadow-xl">
+                        <img src="https://i.imgur.com/lOpWt8Q.jpeg" class="w-full h-24 lg:h-32 object-contain rounded-xl mb-3 shadow-md border-2 border-indigo-300 bg-slate-800/50">
+                        <span class="text-lg lg:text-xl bg-slate-900/80 px-4 py-2 rounded-full font-bold shadow-inner flex items-center justify-center gap-3 w-full">
+                            <span class="text-green-400">+10 <i class="fa-solid fa-check"></i></span>
+                            <span class="text-red-400">-5 <i class="fa-solid fa-times"></i></span>
+                        </span>
+                    </button>
+                    <button onclick="startLevel(2)" class="btn-ifp bg-indigo-900 hover:bg-indigo-800 text-white p-4 rounded-3xl flex flex-col items-center border-4 border-indigo-400 shadow-xl">
+                        <img src="https://i.imgur.com/lq9cvDJ.jpeg" class="w-full h-24 lg:h-32 object-contain rounded-xl mb-3 shadow-md border-2 border-indigo-300 bg-slate-800/50">
+                        <span class="text-lg lg:text-xl bg-slate-900/80 px-4 py-2 rounded-full font-bold shadow-inner flex items-center justify-center gap-3 w-full">
+                            <span class="text-green-400">+10 <i class="fa-solid fa-check"></i></span>
+                            <span class="text-red-400">-5 <i class="fa-solid fa-times"></i></span>
+                        </span>
+                    </button>
+                    <button onclick="startLevel(3)" class="btn-ifp bg-purple-900 hover:bg-purple-800 text-white p-4 rounded-3xl flex flex-col items-center border-4 border-purple-400 shadow-xl">
+                        <img src="https://i.imgur.com/Kt9A8x8.jpeg" class="w-full h-24 lg:h-32 object-contain rounded-xl mb-3 shadow-md border-2 border-purple-300 bg-slate-800/50">
+                        <span class="text-lg lg:text-xl bg-slate-900/80 px-4 py-2 rounded-full font-bold shadow-inner flex items-center justify-center gap-3 w-full">
+                            <span class="text-green-400">+15 <i class="fa-solid fa-check"></i></span>
+                            <span class="text-red-400">-5 <i class="fa-solid fa-times"></i></span>
+                        </span>
+                    </button>
+                    <button onclick="startLevel(4)" class="btn-ifp bg-purple-900 hover:bg-purple-800 text-white p-4 rounded-3xl flex flex-col items-center border-4 border-purple-400 shadow-xl">
+                        <img src="https://i.imgur.com/44dYsD7.jpeg" class="w-full h-24 lg:h-32 object-contain rounded-xl mb-3 shadow-md border-2 border-purple-300 bg-slate-800/50">
+                        <span class="text-lg lg:text-xl bg-slate-900/80 px-4 py-2 rounded-full font-bold shadow-inner flex items-center justify-center gap-3 w-full">
+                            <span class="text-green-400">+15 <i class="fa-solid fa-check"></i></span>
+                            <span class="text-red-400">-5 <i class="fa-solid fa-times"></i></span>
+                        </span>
+                    </button>
+                    <button onclick="startLevel(5)" class="btn-ifp bg-pink-900 hover:bg-pink-800 text-white p-4 rounded-3xl flex flex-col items-center border-4 border-pink-400 shadow-xl">
+                        <img src="https://i.imgur.com/AUZlzNP.jpeg" class="w-full h-24 lg:h-32 object-contain rounded-xl mb-3 shadow-md border-2 border-pink-300 bg-slate-800/50">
+                        <span class="text-lg lg:text-xl bg-slate-900/80 px-4 py-2 rounded-full font-bold shadow-inner flex items-center justify-center gap-3 w-full">
+                            <span class="text-green-400">+20 <i class="fa-solid fa-check"></i></span>
+                            <span class="text-red-400">-5 <i class="fa-solid fa-times"></i></span>
+                        </span>
+                    </button>
+                    <button onclick="startLevel(6)" class="btn-ifp bg-pink-900 hover:bg-pink-800 text-white p-4 rounded-3xl flex flex-col items-center border-4 border-pink-400 shadow-xl">
+                        <img src="https://i.imgur.com/OWH9sdh.jpeg" class="w-full h-24 lg:h-32 object-contain rounded-xl mb-3 shadow-md border-2 border-pink-300 bg-slate-800/50">
+                        <span class="text-lg lg:text-xl bg-slate-900/80 px-4 py-2 rounded-full font-bold shadow-inner flex items-center justify-center gap-3 w-full">
+                            <span class="text-green-400">+20 <i class="fa-solid fa-check"></i></span>
+                            <span class="text-red-400">-5 <i class="fa-solid fa-times"></i></span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MISI SUKSES 1 per 1 -->
+    <div id="modal-success" class="fixed inset-0 bg-slate-900/90 z-50 hidden flex-col justify-center items-center p-8 backdrop-blur-md">
+        <div class="bg-gradient-to-b from-blue-900 to-indigo-900 border-8 border-yellow-400 rounded-[3rem] p-5 lg:p-8 max-w-5xl w-full max-h-[95vh] overflow-y-auto custom-scroll flex flex-col items-center relative shadow-2xl animate-bounce-in text-center">
+            <h2 class="text-4xl md:text-6xl font-bold text-yellow-300 text-shadow mb-3">Alhamdulillah!</h2>
+            <h3 id="success-mission-title" class="text-2xl md:text-4xl font-bold text-white mb-4 text-shadow-sm">Misi Berhasil!</h3>
+            
+            <div class="w-full flex justify-center items-center relative mb-4">
+                <img id="success-mission-img" src="" alt="Misi Sukses" class="max-h-48 lg:max-h-64 w-auto object-contain drop-shadow-2xl animate-float">
+            </div>
+
+            <button onclick="closeSuccessModal()" class="btn-ifp bg-yellow-400 hover:bg-yellow-300 text-blue-900 text-2xl lg:text-3xl py-3 lg:py-4 px-10 lg:px-12 rounded-full font-bold border-4 border-white shadow-xl mt-2">
+                <i class="fa-solid fa-check-circle mr-3"></i> Lanjutkan
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL SEMUA MISI SELESAI -->
+    <div id="modal-all-complete" class="fixed inset-0 bg-slate-900/90 z-[55] hidden flex-col justify-center items-center p-8 backdrop-blur-md">
+        <div class="bg-gradient-to-b from-green-600 to-blue-900 border-8 border-yellow-400 rounded-[3rem] p-5 lg:p-8 max-w-6xl w-full max-h-[95vh] overflow-y-auto custom-scroll flex flex-col items-center relative shadow-2xl animate-bounce-in text-center">
+            
+            <div class="text-5xl lg:text-6xl mb-2 text-yellow-300 animate-pulse"><i class="fa-solid fa-star"></i> <i class="fa-solid fa-trophy mx-4"></i> <i class="fa-solid fa-star"></i></div>
+            <h2 class="text-4xl md:text-6xl font-bold text-yellow-300 text-shadow mb-3">Luar Biasa!</h2>
+            <h3 class="text-2xl md:text-4xl font-bold text-white mb-4 text-shadow-sm">Semua Misi Telah Selesai!</h3>
+            
+            <div class="w-full flex justify-center items-center relative mb-4">
+                <img src="https://i.imgur.com/hYDOh3I.png" alt="Semua Misi Selesai" class="max-h-48 lg:max-h-64 w-auto object-contain drop-shadow-2xl animate-float rounded-3xl border-4 lg:border-8 border-yellow-400 shadow-2xl">
+            </div>
+            
+            <p class="text-lg lg:text-2xl text-blue-100 mb-6 max-w-4xl font-medium leading-relaxed">
+                Berkat kolaborasi dan ilmu yang luar biasa, warga kini memiliki fasilitas ibadah, tempat makan bergizi, dan sekolah yang sangat layak. Pahlawan kebaikan sejati!
+            </p>
+
+            <button onclick="goToVictory()" class="btn-ifp bg-yellow-400 hover:bg-yellow-300 text-blue-900 text-2xl lg:text-3xl py-3 lg:py-4 px-10 lg:px-12 rounded-full font-bold border-4 border-white shadow-xl">
+                Lihat Hasil Akhir <i class="fa-solid fa-arrow-right ml-3"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL KONFIRMASI HOME -->
+    <div id="modal-confirm-home" class="fixed inset-0 bg-slate-900/90 z-50 hidden flex-col justify-center items-center p-8 backdrop-blur-md">
+        <div class="bg-slate-800 border-8 border-red-500 rounded-[2rem] p-8 max-w-2xl w-full flex flex-col items-center text-center shadow-2xl animate-bounce-in">
+            <i class="fa-solid fa-triangle-exclamation text-7xl text-red-500 mb-4"></i>
+            <h2 class="text-4xl lg:text-5xl font-bold text-white mb-4">Kembali ke Beranda?</h2>
+            <p class="text-xl lg:text-2xl text-gray-300 mb-8">Progres permainan (Karakter, Emas, dan Bangunan) akan direset kembali dari awal.</p>
+            <div class="flex flex-col sm:flex-row gap-6 w-full justify-center">
+                <button onclick="confirmHome(false)" class="btn-ifp bg-slate-500 hover:bg-slate-400 text-white text-2xl lg:text-3xl py-4 px-8 rounded-full font-bold border-4 border-slate-300 w-full sm:w-auto shadow-md">Batal</button>
+                <button onclick="confirmHome(true)" class="btn-ifp bg-red-600 hover:bg-red-500 text-white text-2xl lg:text-3xl py-4 px-8 rounded-full font-bold border-4 border-red-300 w-full sm:w-auto shadow-md">Ya, Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. QUIZ SCREEN -->
+    <div id="screen-quiz" class="screen bg-ramadan p-4 lg:p-6 relative flex-col">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md"></div> <!-- Overlay -->
+        
+        <div class="z-10 h-full flex flex-col relative w-full">
+            <!-- Top Bar Navigasi -->
+            <div class="flex flex-wrap justify-between items-center mb-2 lg:mb-4 gap-2 lg:gap-4">
+                <div class="flex items-center gap-2 lg:gap-4">
+                    <button onclick="goHome()" class="btn-ifp bg-red-600 hover:bg-red-500 text-white w-12 h-12 lg:w-14 lg:h-14 rounded-xl border-4 border-red-300 flex items-center justify-center text-xl lg:text-2xl shadow-md" title="Kembali ke Beranda">
+                        <i class="fa-solid fa-house"></i>
+                    </button>
+                    <button onclick="backToMap()" class="btn-ifp bg-blue-600 text-white px-4 py-2 lg:px-6 lg:py-3 rounded-2xl text-xl lg:text-2xl font-bold border-4 border-white shadow-lg">
+                        <i class="fa-solid fa-arrow-left mr-2"></i> Peta Misi
+                    </button>
+                </div>
+                
+                <!-- Kanan -->
+                <div class="flex items-center gap-2 lg:gap-4 ml-auto">
+                    <div class="bg-slate-800 text-yellow-400 px-4 py-2 lg:px-6 lg:py-3 rounded-2xl text-2xl lg:text-3xl font-bold border-4 border-yellow-400 shadow-lg flex items-center">
+                        <img src="https://i.imgur.com/fGsPzlt.jpeg" alt="Koin Emas" class="w-6 h-6 lg:w-8 lg:h-8 inline-block rounded-full border-2 border-yellow-200 object-cover mr-2 lg:mr-3 shadow-sm">
+                        <span id="quiz-gold">0</span>
+                    </div>
+                    <button onclick="toggleMusic()" class="btn-ifp bg-slate-800 hover:bg-slate-700 text-white w-12 h-12 lg:w-14 lg:h-14 rounded-xl border-4 border-slate-500 flex items-center justify-center text-xl lg:text-2xl shadow-md" title="Musik Latar">
+                        <i class="music-icon fa-solid fa-volume-xmark"></i>
+                    </button>
+                    <button onclick="toggleFullScreen()" class="btn-ifp bg-slate-800 hover:bg-slate-700 text-white w-12 h-12 lg:w-14 lg:h-14 rounded-xl border-4 border-slate-500 flex items-center justify-center text-xl lg:text-2xl shadow-md" title="Layar Penuh">
+                        <i class="fs-icon fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TURN INDICATOR (Giliran Pemain) -->
+            <div class="w-full flex justify-center mb-2 lg:mb-4">
+                <div id="turn-indicator" class="bg-blue-800 border-4 border-blue-400 rounded-full pl-4 pr-6 py-1 lg:pl-6 lg:pr-8 lg:py-2 flex items-center gap-3 lg:gap-4 shadow-xl animate-turn">
+                    <span class="text-lg lg:text-xl text-white font-bold tracking-wide">Giliran:</span>
+                    <img id="turn-avatar" src="" class="w-10 h-10 lg:w-14 lg:h-14 rounded-full border-2 border-yellow-300 object-contain bg-white shadow-md p-1">
+                    <span id="turn-name" class="text-xl lg:text-2xl text-yellow-300 font-bold text-shadow-sm">Pemain</span>
+                </div>
+            </div>
+            
+            <div class="text-center mb-2 flex items-center justify-center gap-3 lg:gap-4">
+                <h2 id="quiz-title" class="text-2xl lg:text-4xl font-bold text-yellow-400 text-shadow">Level Kelas 1</h2>
+                <span id="quiz-rules" class="text-base lg:text-lg text-white bg-slate-800/80 px-3 py-1 lg:px-4 lg:py-2 rounded-full border-2 border-slate-500 shadow-inner">Benar: +10 | Salah: -5</span>
+            </div>
+            <!-- Judul HP (Muncul jika layar kecil, sekarang disembunyikan/dihapus agar tidak error) -->
+            <div class="text-center md:hidden mb-2 hidden">
+                <h2 id="quiz-title-mobile" class="text-2xl font-bold text-yellow-400 text-shadow">Level Kelas 1</h2>
+            </div>
+
+            <!-- Question Area -->
+            <div class="flex-grow flex flex-col justify-center gap-3 lg:gap-4 w-full max-w-[95vw] lg:max-w-6xl mx-auto mb-2 lg:mb-4">
+                <div class="bg-white/95 text-blue-900 p-4 lg:p-6 rounded-3xl text-center border-4 lg:border-8 border-yellow-400 shadow-2xl backdrop-blur-sm">
+                    <span id="question-number" class="block text-lg lg:text-xl text-blue-600 font-bold mb-1 lg:mb-2">Soal 1 / 20</span>
+                    <h3 id="question-text" class="text-2xl md:text-3xl lg:text-4xl font-bold leading-snug">Pertanyaan akan muncul di sini?</h3>
+                </div>
+
+                <!-- Options Grid -->
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4 mt-1 lg:mt-2">
+                    <!-- Buttons injected by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEEDBACK OVERLAY (Benar/Salah) -->
+    <div id="feedback-overlay">
+        <div id="feedback-content" class="text-center transform scale-0 transition-transform duration-300 bg-slate-800/95 p-8 lg:p-12 rounded-[3rem] border-8 border-yellow-400 shadow-2xl backdrop-blur-md">
+            <i id="feedback-icon" class="text-[6rem] lg:text-[8rem] mb-4 drop-shadow-lg"></i>
+            <h2 id="feedback-text" class="text-5xl lg:text-6xl font-bold text-white text-shadow mb-3">Benar!</h2>
+            <p id="feedback-subtext" class="text-4xl lg:text-5xl font-bold mt-3 drop-shadow-lg"></p>
+        </div>
+    </div>
+
+    <!-- VICTORY SCREEN (Hasil Akhir) -->
+    <div id="screen-victory" class="screen bg-ramadan justify-center items-center relative p-8">
+        <div class="absolute inset-0 bg-blue-900/80 backdrop-blur-sm"></div> <!-- Overlay -->
+        
+        <div class="text-center z-10 animate-bounce-in bg-slate-900/70 p-6 lg:p-10 rounded-[3rem] border-8 border-yellow-400 shadow-2xl w-full max-w-6xl overflow-y-auto max-h-[95vh] custom-scroll">
+            <i class="fa-solid fa-star text-yellow-400 text-5xl lg:text-7xl mb-3 animate-float drop-shadow-2xl"></i>
+            <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold text-yellow-400 text-shadow mb-3">MISI SELESAI!</h1>
+            
+            <h2 id="victory-subtitle" class="text-2xl lg:text-4xl font-bold text-white mb-6 text-shadow-sm">Kalian Pahlawan Kebaikan!</h2>
+            
+            <!-- Daftar Pemain Kolaborasi -->
+            <div id="victory-players" class="flex flex-wrap justify-center gap-4 lg:gap-8 mb-8">
+                <!-- Avatar pemain diinject via JS -->
+            </div>
+
+            <p class="text-lg lg:text-2xl text-blue-100 max-w-4xl mx-auto leading-relaxed mb-8 bg-slate-800/50 p-5 rounded-2xl border-2 border-slate-600">
+                Dengan kecerdasan dan semangat kerja sama yang hebat, misi kebaikan di bulan suci ini telah berhasil dilaksanakan. Tetaplah menjadi anak saleh/salehah yang peduli pada sesama!
+            </p>
+            <button onclick="goHome(true)" class="btn-ifp bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold py-4 px-12 rounded-full text-2xl lg:text-3xl border-4 border-white shadow-xl">
+                <i class="fa-solid fa-rotate-right mr-3"></i> Main Lagi
+            </button>
+        </div>
+        <div class="absolute w-full h-full top-0 left-0 pointer-events-none opacity-50 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] z-20"></div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- DATA KARAKTER ---
+        const charactersData = [
+            { id: 'fatih', name: 'Fatih', img: 'https://i.imgur.com/xL8RKQe.png' },
+            { id: 'aisyah', name: 'Aisyah', img: 'https://i.imgur.com/PvLA25k.png' },
+            { id: 'umar', name: 'Umar', img: 'https://i.imgur.com/Avleedg.png' },
+            { id: 'fatimah', name: 'Fatimah', img: 'https://i.imgur.com/Vfd58Zx.png' }
+        ];
+
+        // --- DATA BANK SOAL (120 Soal) ---
+        const questionBank = {
+            1: [ // KELAS 1
+                { q: "Kitab suci umat Islam adalah...", o: ["A. Injil", "B. Al-Qur'an", "C. Taurat", "D. Zabur"], a: 1 },
+                { q: "Huruf Arab dalam Al-Qur'an disebut huruf ...", o: ["A. Latin", "B. Hijaiyah", "C. Kapital", "D. Angka"], a: 1 },
+                { q: "Sebelum membaca Al-Qur'an sebaiknya kita...", o: ["A. Bermain", "B. Berdoa", "C. Makan", "D. Tidur"], a: 1 },
+                { q: "Saat membaca Al-Qur'an, sikap kita harus...", o: ["A. Bercanda", "B. Hormat dan tenang", "C. Berlari", "D. Berteriak"], a: 1 },
+                { q: "Jumlah rukun iman ada...", o: ["A. 4", "B. 5", "C. 6", "D. 7"], a: 2 },
+                { q: "Percaya kepada Allah termasuk rukun iman ke-...", o: ["A. Pertama", "B. Kedua", "C. Ketiga", "D. Keempat"], a: 0 },
+                { q: "Malaikat adalah makhluk yang ...", o: ["A. Terbuat dari tanah", "B. Selalu taat kepada Allah", "C. Suka bermain", "D. Makan dan minum"], a: 1 },
+                { q: "Nabi terakhir adalah Nabi ....", o: ["A. Musa", "B. Isa", "C. Muhammad", "D. Nuh"], a: 2 },
+                { q: "Jumlah rukun Islam ada...", o: ["A. 3", "B. 4", "C. 5", "D. 6"], a: 2 },
+                { q: "Salat wajib dilakukan sebanyak ... kali sehari.", o: ["A. 3", "B. 4", "C. 5", "D. 6"], a: 2 },
+                { q: "Puasa wajib dilakukan pada bulan ...", o: ["A. Syawal", "B. Ramadan", "C. Muharram", "D. Safar"], a: 1 },
+                { q: "Allah Maha Pencipta disebut...", o: ["A. Al-Khaliq", "B. Al-'Alim", "C. Ar-Rahman", "D. Al-Malik"], a: 0 },
+                { q: "Allah Maha Pengasih disebut...", o: ["A. Ar-Rahim", "B. Ar-Rahman", "C. Al-Bashir", "D. As-Sami'"], a: 1 },
+                { q: "Sikap yang baik kepada orang tua adalah ...", o: ["A. Melawan", "B. Membentak", "C. Patuh dan hormat", "D. Mengabaikan"], a: 2 },
+                { q: "Jika teman jatuh, kita harus ...", o: ["A. Menertawakan", "B. Membantu", "C. Membiarkan", "D. Menjauh"], a: 1 },
+                { q: "Berkata jujur adalah contoh akhlak ...", o: ["A. Buruk", "B. Tercela", "C. Terpuji", "D. Biasa"], a: 2 },
+                { q: "Mengucapkan salam berarti ...", o: ["A. Marah", "B. Doa keselamatan", "C. Mengejek", "D. Memanggil"], a: 1 },
+                { q: "Sebelum makan kita membaca...", o: ["A. Doa", "B. Lagu", "C. Cerita", "D. Tepuk tangan"], a: 0 },
+                { q: "Jika berbuat salah kepada teman, kita harus ...", o: ["A. Lari", "B. Diam saja", "C. Meminta maaf", "D. Marah"], a: 2 },
+                { q: "Anak muslim yang baik harus rajin ...", o: ["A. Bertengkar", "B. Bermalas-malasan", "C. Belajar dan beribadah", "D. Berbohong"], a: 2 }
+            ],
+            2: [ // KELAS 2
+                { q: "Surah An-Nas terdiri dari ... ayat.", o: ["A. 4", "B. 5", "C. 6", "D. 7"], a: 2 },
+                { q: "Surah An-Nas termasuk surah ke-... dalam Al-Qur'an.", o: ["A. 112", "B. 113", "C. 114", "D. 115"], a: 2 },
+                { q: "Isi Surah An-Nas mengajarkan kita untuk ...", o: ["A. Meminta rezeki", "B. Memohon perlindungan kepada Allah", "C. Meminta harta", "D. Meminta kekuasaan"], a: 1 },
+                { q: "Kita membaca Surah An-Nas ketika merasa...", o: ["A. Senang", "B. Takut atau khawatir", "C. Kenyang", "D. Mengantuk"], a: 1 },
+                { q: "Allah Maha Mengetahui disebut ...", o: ["A. Al-Malik", "B. Al-'Alim", "C. Al-Ghafur", "D. Ar-Rahman"], a: 1 },
+                { q: "Allah Maha Mendengar disebut...", o: ["A. As-Sami'", "B. Al-Bashir", "C. Al-Qadir", "D. Al-Khaliq"], a: 0 },
+                { q: "Contoh sikap percaya Allah Maha Melihat adalah ...", o: ["A. Berbohong saat tidak diawasi", "B. Berbuat baik meskipun tidak ada orang", "C. Bermalas-malasan", "D. Menyalahkan teman"], a: 1 },
+                { q: "Jika kita berbuat salah, kita harus ...", o: ["A. Lari", "B. Menyembunyikan kesalahan", "C. Meminta ampun kepada Allah", "D. Menyalahkan orang lain"], a: 2 },
+                { q: "Sikap empati berarti ...", o: ["A. Acuh kepada teman", "B. Ikut merasakan kesedihan orang lain", "C. Mengejek teman", "D. Menjauh dari teman"], a: 1 },
+                { q: "Contoh perilaku sayang kepada sesama adalah ...", o: ["A. Memukul teman", "B. Membantu teman yang kesulitan", "C. Mengejek teman", "D. Bertengkar"], a: 1 },
+                { q: "Bertutur kata lembut artinya ...", o: ["A. Berbicara kasar", "B. Berteriak", "C. Berbicara sopan dan halus", "D. Membentak"], a: 2 },
+                { q: "Jujur berarti ...", o: ["A. Berkata sesuai kenyataan", "B. Menyembunyikan kebenaran", "C. Berbohong", "D. Mengarang cerita"], a: 0 },
+                { q: "Jika meminjam barang teman, sebaiknya ...", o: ["A. Tidak dikembalikan", "B. Disimpan saja", "C. Dikembalikan dengan baik", "D. Dibuang"], a: 2 },
+                { q: "Azan adalah ...", o: ["A. Tanda waktu makan", "B. Panggilan untuk salat", "C. Tanda pulang sekolah", "D. Tanda bermain"], a: 1 },
+                { q: "Iqamah dibaca...", o: ["A. Setelah salat", "B. Sebelum salat dimulai", "C. Saat tidur", "D. Saat makan"], a: 1 },
+                { q: "Salat wajib dalam sehari semalam berjumlah...", o: ["A. 3 waktu", "B. 4 waktu", "C. 5 waktu", "D. 6 waktu"], a: 2 },
+                { q: "Jika mendengar azan, sikap kita adalah...", o: ["A. Tetap bermain", "B. Segera bersiap salat", "C. Tidur", "D. Makan"], a: 1 },
+                { q: "Nabi Nuh a.s. diutus untuk ...", o: ["A. Berdagang", "B. Mengajak kaumnya menyembah Allah", "C. Berperang", "D. Menjadi raja"], a: 1 },
+                { q: "Kaum Nabi Nuh yang tidak taat mendapatkan ...", o: ["A. Hadiah", "B. Banjir besar", "C. Pujian", "D. Kekayaan"], a: 1 },
+                { q: "Hikmah dari kisah Nabi Nuh adalah...", o: ["A. Boleh melawan nabi", "B. Harus sabar dan taat kepada Allah", "C. Tidak perlu beribadah", "D. Boleh berbuat salah"], a: 1 }
+            ],
+            3: [ // KELAS 3
+                { q: "QS Al-'Alaq ayat pertama berisi perintah untuk...", o: ["A. Salat", "B. Membaca", "C. Puasa", "D. Bersedekah"], a: 1 },
+                { q: "QS Al-'Alaq diturunkan kepada Nabi Muhammad di ...", o: ["A. Madinah", "B. Mekah", "C. Thaif", "D. Yaman"], a: 1 },
+                { q: "Kata Iqra' dalam QS Al-'Alaq artinya...", o: ["A. Dengarkan", "B. Tulislah", "C. Bacalah", "D. Hafalkan"], a: 2 },
+                { q: "Allah mengajarkan manusia dengan perantaraan...", o: ["A. Buku", "B. Pena (qalam)", "C. Guru", "D. Malaikat saja"], a: 1 },
+                { q: "Membaca Al-Qur'an harus dengan...", o: ["A. Cepat tanpa aturan", "B. Tajwid yang benar", "C. Sambil bermain", "D. Sambil berbicara"], a: 1 },
+                { q: "Huruf qalqalah akan berbunyi memantul ketika...", o: ["A. Dibaca panjang", "B. Berharakat kasrah", "C. Sukun atau berhenti", "D. Berharakat fathah"], a: 2 },
+                { q: "Jumlah sifat wajib bagi Allah adalah ...", o: ["A. 10", "B. 15", "C. 20", "D. 25"], a: 2 },
+                { q: "Sifat Wujud artinya Allah itu...", o: ["A. Maha Melihat", "B. Maha Ada", "C. Maha Mendengar", "D. Maha Kuasa"], a: 1 },
+                { q: "Lawan dari sifat wajib Allah disebut sifat ...", o: ["A. Jaiz", "B. Sunnah", "C. Mustahil", "D. Makruh"], a: 2 },
+                { q: "Allah tidak mungkin bersifat lemah karena Allah memiliki sifat ...", o: ["A. Qudrah", "B. Ilmu", "C. Hayat", "D. Sama'"], a: 0 },
+                { q: "Contoh perilaku jujur di sekolah adalah...", o: ["A. Menyontek saat ulangan", "B. Mengakui kesalahan yang dilakukan", "C. Menyalahkan teman", "D. Berbohong kepada guru"], a: 1 },
+                { q: "Disiplin berarti ...", o: ["A. Melakukan sesuatu sesuka hati", "B. Taat pada aturan dan waktu", "C. Bermalas-malasan", "D. Menunda pekerjaan"], a: 1 },
+                { q: "Sikap hormat kepada guru ditunjukkan dengan ...", o: ["A. Membantah guru", "B. Mendengarkan saat guru menjelaskan", "C. Mengobrol di kelas", "D. Bermain sendiri"], a: 1 },
+                { q: "Jika menemukan barang milik teman, sebaiknya ...", o: ["A. Disimpan", "B. Diambil diam-diam", "C. Dikembalikan kepada pemiliknya", "D. Dibuang"], a: 2 },
+                { q: "Wudu dilakukan untuk ...", o: ["A. Bermain air", "B. Membersihkan diri sebelum salat", "C. Mandi", "D. Cuci tangan saja"], a: 1 },
+                { q: "Membasuh wajah saat wudu dilakukan sebanyak...", o: ["A. 1 kali", "B. 2 kali", "C. 3 kali", "D. 4 kali"], a: 2 },
+                { q: "Salat berjamaah lebih baik daripada salat sendiri karena...", o: ["A. Lebih cepat", "B. Lebih ringan", "C. Pahalanya lebih banyak", "D. Lebih mudah"], a: 2 },
+                { q: "Salah satu teladan dari para nabi adalah...", o: ["A. Sombong", "B. Sabar", "C. Malas", "D. Pemarah"], a: 1 },
+                { q: "Menjaga kebersihan kelas merupakan contoh...", o: ["A. Akhlak buruk", "B. Hidup bersih dan sehat", "C. Perilaku malas", "D. Tidak peduli lingkungan"], a: 1 },
+                { q: "Jika melihat sampah di lantai kelas, sikap yang benar adalah...", o: ["A. Membiarkan", "B. Menyuruh orang lain", "C. Memungut dan membuang ke tempat sampah", "D. Menendangnya"], a: 2 }
+            ],
+            4: [ // KELAS 4
+                { q: "QS Al-Hujurat ayat 13 menjelaskan bahwa manusia diciptakan berbeda-beda agar...", o: ["A. Saling bersaing", "B. Saling mengenal", "C. Saling bermusuhan", "D. Saling mengejek"], a: 1 },
+                { q: "Menurut QS Al-Hujurat ayat 13, manusia yang paling mulia di sisi Allah adalah yang...", o: ["A. Kaya", "B. Pintar", "C. Bertakwa", "D. Terkenal"], a: 2 },
+                { q: "Perbedaan suku dan bangsa harus disikapi dengan...", o: ["A. Sombong", "B. Merendahkan", "C. Menghargai", "D. Menghindari"], a: 2 },
+                { q: "Contoh sikap sesuai QS Al-Hujurat ayat 13 adalah...", o: ["A. Mengejek teman berbeda suku", "B. Bermain bersama tanpa membeda-bedakan", "C. Memilih teman yang sama saja", "D. Menolak perbedaan"], a: 1 },
+                { q: "Allah Maha Pengasih disebut...", o: ["A. Ar-Rahman", "B. Al-Malik", "C. Al-'Alim", "D. Al-Qadir"], a: 0 },
+                { q: "Allah Maha Penyayang disebut ...", o: ["A. Ar-Rahim", "B. Al-Bashir", "C. As-Sami'", "D. Al-Khaliq"], a: 0 },
+                { q: "Contoh meneladani sifat Ar-Rahman adalah ....", o: ["A. Suka marah", "B. Menolong teman yang kesulitan", "C. Mengejek teman", "D. Tidak peduli"], a: 1 },
+                { q: "Jika kita percaya Allah Maha Melihat, maka kita akan ...", o: ["A. Berbuat baik setiap saat", "B. Berbuat sesuka hati", "C. Berbohong", "D. Bermalas-malasan"], a: 0 },
+                { q: "Toleransi berarti...", o: ["A. Memaksakan pendapat", "B. Menghargai perbedaan", "C. Menghindari teman", "D. Membeda-bedakan"], a: 1 },
+                { q: "Contoh sikap toleransi di sekolah adalah...", o: ["A. Mengejek agama teman", "B. Mengganggu teman beribadah", "C. Menghormati teman yang berbeda", "D. Tidak mau berteman"], a: 2 },
+                { q: "Jika teman memiliki pendapat berbeda, sebaiknya kita...", o: ["A. Marah", "B. Mengejek", "C. Menghargai", "D. Menghindar"], a: 2 },
+                { q: "Sikap yang harus dihindari dalam pergaulan adalah ...", o: ["A. Saling membantu", "B. Kerja sama", "C. Membully teman", "D. Bermain bersama"], a: 2 },
+                { q: "Balig berarti ...", o: ["A. Dewasa menurut syariat", "B. Kaya", "C. Sehat", "D. Pintar"], a: 0 },
+                { q: "Salah satu tanda balig pada laki-laki adalah....", o: ["A. Menstruasi", "B. Mimpi basah", "C. Hamil", "D. Menikah"], a: 1 },
+                { q: "Setelah balig, seseorang wajib ....", o: ["A. Bermain lebih lama", "B. Meninggalkan ibadah", "C. Menjalankan perintah agama", "D. Bebas dari aturan"], a: 2 },
+                { q: "Contoh tanggung jawab seorang anak yang sudah balig adalah...", o: ["A. Meninggalkan salat", "B. Rajin melaksanakan salat", "C. Bermalas-malasan", "D. Tidak belajar"], a: 1 },
+                { q: "Nabi Muhammad saw. hijrah dari Mekah ke ...", o: ["A. Thaif", "B. Madinah", "C. Yaman", "D. Syam"], a: 1 },
+                { q: "Tujuan hijrah Nabi Muhammad saw. adalah...", o: ["A. Berdagang", "B. Berlibur", "C. Menyelamatkan dan mengembangkan dakwah", "D. Mencari kekayaan"], a: 2 },
+                { q: "Kaum yang membantu Nabi di Madinah disebut ...", o: ["A. Muhajirin", "B. Anshar", "C. Quraisy", "D. Tabiin"], a: 1 },
+                { q: "Sikap yang dapat diteladani dari peristiwa hijrah adalah...", o: ["A. Mudah menyerah", "B. Malas berusaha", "C. Sabar dan berani berjuang", "D. Takut menghadapi masalah"], a: 2 }
+            ],
+            5: [ // KELAS 5
+                { q: "Membaca Al-Qur'an dengan memperhatikan panjang pendek dan hukum bacaan disebut ilmu...", o: ["A. Tafsir", "B. Tajwid", "C. Hadis", "D. Fikih"], a: 1 },
+                { q: "Bacaan mad thabi'i dibaca sepanjang...", o: ["A. 1 harakat", "B. 2 harakat", "C. 4 harakat", "D. 6 harakat"], a: 1 },
+                { q: "Membaca Al-Qur'an dengan tartil artinya...", o: ["A. Cepat tanpa aturan", "B. Asal membaca", "C. Pelan dan sesuai tajwid", "D. Sambil berbicara"], a: 2 },
+                { q: "Sikap yang benar saat membaca Al-Qur'an adalah ...", o: ["A. Sambil bercanda", "B. Dalam keadaan suci dan hormat", "C. Sambil bermain", "D. Sambil berbaring sembarangan"], a: 1 },
+                { q: "Iman kepada kitab Allah termasuk rukun iman ke-...", o: ["A. Kedua", "B. Ketiga", "C. Keempat", "D. Kelima"], a: 2 },
+                { q: "Kitab Allah yang diturunkan kepada Nabi Musa a.s. adalah ...", o: ["A. Zabur", "B. Injil", "C. Taurat", "D. Al-Qur'an"], a: 2 },
+                { q: "Kitab Injil diturunkan kepada Nabi ...", o: ["A. Isa a.s.", "B. Ibrahim a.s.", "C. Nuh a.s.", "D. Yusuf a.s."], a: 0 },
+                { q: "Contoh perilaku beriman kepada Al-Qur'an adalah ...", o: ["A. Menyimpannya saja", "B. Membaca dan mengamalkannya", "C. Tidak peduli", "D. Hanya membacanya saat ujian"], a: 1 },
+                { q: "Puasa Ramadan hukumnya...", o: ["A. Sunnah", "B. Wajib", "C. Makruh", "D. Mubah"], a: 1 },
+                { q: "Orang yang sedang sakit boleh tidak berpuasa, tetapi harus ...", o: ["A. Membayar zakat", "B. Mengganti di hari lain (qadha)", "C. Tidak perlu mengganti", "D. Membayar denda saja"], a: 1 },
+                { q: "Salah satu hikmah puasa adalah ...", o: ["A. Melatih kesabaran", "B. Membuat malas", "C. Mengurangi ibadah", "D. Tidak belajar"], a: 0 },
+                { q: "Hal yang membatalkan puasa adalah ...", o: ["A. Tidur", "B. Makan dengan sengaja di siang hari", "C. Belajar", "D. Membaca Al-Qur'an"], a: 1 },
+                { q: "Zakat fitrah dikeluarkan pada bulan...", o: ["A. Muharram", "B. Ramadan", "C. Syawal", "D. Dzulhijjah"], a: 1 },
+                { q: "Zakat bertujuan untuk ...", o: ["A. Menambah harta", "B. Membersihkan harta dan membantu yang membutuhkan", "C. Mengurangi kekayaan", "D. Membayar utang"], a: 1 },
+                { q: "Orang yang berhak menerima zakat disebut ...", o: ["A. Muzakki", "B. Mustahik", "C. Amil", "D. Wakif"], a: 1 },
+                { q: "Sikap tanggung jawab di sekolah ditunjukkan dengan ...", o: ["A. Tidak mengerjakan tugas", "B. Mengerjakan tugas tepat waktu", "C. Menyontek teman", "D. Bermalas-malasan"], a: 1 },
+                { q: "Contoh kerja sama yang baik adalah ...", o: ["A. Mengerjakan tugas sendiri-sendiri", "B. Saling membantu dalam kelompok", "C. Membiarkan teman bekerja", "D. Tidak ikut kegiatan"], a: 1 },
+                { q: "Abu Bakar Ash-Shiddiq mendapat gelar Ash-Shiddiq karena ...", o: ["A. Kaya", "B. Selalu membenarkan Nabi", "C. Pandai berdagang", "D. Berani berperang"], a: 1 },
+                { q: "Sikap dermawan dapat diteladani dari sahabat ...", o: ["A. Umar bin Khattab", "B. Ali bin Abi Thalib", "C. Utsman bin Affan", "D. Khalid bin Walid"], a: 2 },
+                { q: "Teladan yang dapat diambil dari para sahabat Nabi adalah...", o: ["A. Hidup mewah", "B. Malas beribadah", "C. Jujur, berani, dan peduli sesama", "D. Mencari kekayaan saja"], a: 2 }
+            ],
+            6: [ // KELAS 6
+                { q: "QS Ad-Duha berisi tentang...", o: ["A. Ancaman bagi orang kafir", "B. Penghiburan Allah kepada Nabi Muhammad saw.", "C. Perintah perang", "D. Hukum zakat"], a: 1 },
+                { q: "Dalam QS Ad-Duha, Allah melarang kita untuk...", o: ["A. Menolong orang lain", "B. Menghardik anak yatim", "C. Bersedekah", "D. Beribadah"], a: 1 },
+                { q: "Sikap yang sesuai dengan QS Ad-Duha adalah...", o: ["A. Mengabaikan orang miskin", "B. Menolong dan menyantuni yang membutuhkan", "C. Hidup sendiri", "D. Bersikap sombong"], a: 1 },
+                { q: "Salah satu nikmat Allah yang harus disyukuri adalah...", o: ["A. Harta saja", "B. Ilmu dan petunjuk", "C. Kekuasaan", "D. Ketenaran"], a: 1 },
+                { q: "Allah Maha Pengampun disebut...", o: ["A. Al-Ghaffar", "B. Al-'Alim", "C. Al-Malik", "D. Al-Qadir"], a: 0 },
+                { q: "Allah Maha Mengetahui disebut ...", o: ["A. As-Sami'", "B. Al-Bashir", "C. Al-'Alim", "D. Al-Khaliq"], a: 2 },
+                { q: "Meneladani sifat Al-Ghaffar dapat dilakukan dengan ...", o: ["A. Membalas kesalahan teman", "B. Mudah memaafkan orang lain", "C. Menyimpan dendam", "D. Mengejek teman"], a: 1 },
+                { q: "Halal berarti sesuatu yang ...", o: ["A. Dilarang", "B. Dibenci", "C. Boleh dilakukan", "D. Makruh"], a: 2 },
+                { q: "Haram adalah sesuatu yang ...", o: ["A. Dianjurkan", "B. Dilarang oleh Allah", "C. Boleh dilakukan", "D. Tidak penting"], a: 1 },
+                { q: "Contoh makanan halal adalah ...", o: ["A. Daging babi", "B. Bangkai", "C. Makanan yang disembelih sesuai syariat", "D. Minuman keras"], a: 2 },
+                { q: "Hikmah mengonsumsi makanan halal adalah....", o: ["A. Menjadi sehat dan berkah", "B. Menjadi malas", "C. Menjadi sombong", "D. Tidak perlu beribadah"], a: 0 },
+                { q: "Qada dan qadar sering disebut dengan istilah...", o: ["A. Takdir", "B. Nasib buruk", "C. Keberuntungan", "D. Kebetulan"], a: 0 },
+                { q: "Sikap yang benar terhadap takdir adalah...", o: ["A. Pasrah tanpa usaha", "B. Berusaha dan bertawakal", "C. Malas belajar", "D. Menyalahkan orang lain"], a: 1 },
+                { q: "Contoh beriman kepada qadar adalah ...", o: ["A. Tidak mau belajar karena sudah takdir", "B. Belajar sungguh-sungguh lalu berdoa", "C. Menyerah sebelum mencoba", "D. Tidak peduli hasil"], a: 1 },
+                { q: "Puasa Senin-Kamis termasuk puasa...", o: ["A. Wajib", "B. Sunnah", "C. Makruh", "D. Haram"], a: 1 },
+                { q: "Tujuan melaksanakan puasa sunnah adalah ...", o: ["A. Mencari pujian", "B. Menambah pahala dan mendekatkan diri kepada Allah", "C. Agar terlihat hebat", "D. Mengurangi makan saja"], a: 1 },
+                { q: "Khalifah pertama setelah Nabi Muhammad saw. adalah ...", o: ["A. Umar bin Khattab", "B. Ali bin Abi Thalib", "C. Abu Bakar Ash-Shiddiq", "D. Utsman bin Affan"], a: 2 },
+                { q: "Umar bin Khattab dikenal sebagai pemimpin yang ...", o: ["A. Lemah", "B. Adil dan tegas", "C. Pemarah tanpa alasan", "D. Malas"], a: 1 },
+                { q: "Utsman bin Affan berjasa dalam...", o: ["A. Mengumpulkan mushaf Al-Qur'an", "B. Memimpin perang Badar", "C. Hijrah ke Madinah", "D. Menjadi penulis wahyu pertama"], a: 0 },
+                { q: "Teladan dari Khulafaur Rasyidin yang dapat diterapkan adalah ...", o: ["A. Hidup mewah", "B. Malas bekerja", "C. Jujur, adil, dan bertanggung jawab", "D. Mencari kekayaan saja"], a: 2 }
+            ]
+        };
+
+        // --- GAME METADATA ---
+        const missionMeta = {
+            'masjid': { 
+                id: 'masjid', title: 'Misi 1: Bangun Masjid', desc: 'Sediakan tempat beribadah yang nyaman bagi warga sekitar.', cost: 400, prereq: null, 
+                icon: '<img src="https://i.imgur.com/QpaKuwU.jpeg" class="w-24 h-24 object-cover rounded-2xl border-4 border-yellow-400 shadow-md">',
+                successImg: 'https://i.imgur.com/ez16bfS.png'
+            },
+            'makan': { 
+                id: 'makan', title: 'Misi 2: Makan Bergizi', desc: 'Dirikan tenda pembagian makanan sehat dan bergizi untuk warga.', cost: 400, prereq: 'masjid', 
+                icon: '<img src="https://i.imgur.com/H2v4qBz.jpeg" class="w-24 h-24 object-cover rounded-2xl border-4 border-yellow-400 shadow-md">',
+                successImg: 'https://i.imgur.com/G8ShTNS.png'
+            },
+            'sekolah': { 
+                id: 'sekolah', title: 'Misi 3: Madrasah', desc: 'Bangun lembaga pendidikan untuk mencetak generasi cerdas dan berakhlak.', cost: 400, prereq: 'makan', 
+                icon: '<img src="https://i.imgur.com/SEDXrj3.jpeg" class="w-24 h-24 object-cover rounded-2xl border-4 border-yellow-400 shadow-md">',
+                successImg: 'https://i.imgur.com/01GXEC4.png'
+            }
+        };
+
+        // --- GAME STATE ---
+        let state = {
+            gold: 0,
+            missions: { masjid: false, makan: false, sekolah: false },
+            currentLevel: 1,
+            currentQuestionIndex: 0,
+            currentQuestions: [],
+            numPlayers: 1,
+            players: [],
+            currentPlayerIndex: 0
+        };
+
+        // Variabel Setup Sementara
+        let setupPlayerIndex = 0;
+
+        // --- CORE FUNCTIONS ---
+        
+        // Fitur Layar Penuh (Fullscreen)
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) { document.exitFullscreen(); }
+            }
+        }
+
+        document.addEventListener("fullscreenchange", () => {
+            const icons = document.querySelectorAll('.fs-icon');
+            icons.forEach(i => {
+                i.className = document.fullscreenElement ? "fs-icon fa-solid fa-compress" : "fs-icon fa-solid fa-expand";
+            });
+        });
+
+        // Fitur Home (Beranda)
+        function goHome(force = false) {
+            if(force) {
+                confirmHome(true);
+            } else {
+                document.getElementById('modal-confirm-home').style.display = 'flex';
+            }
+        }
+
+        // Fitur Musik BGM
+        const bgMusic = document.getElementById('bg-music');
+        bgMusic.volume = 0.4; 
+
+        function toggleMusic() {
+            if (bgMusic.paused) {
+                bgMusic.play().catch(e => console.log(e));
+                updateMusicIcons(true);
+            } else {
+                bgMusic.pause();
+                updateMusicIcons(false);
+            }
+        }
+
+        function updateMusicIcons(isPlaying) {
+            const icons = document.querySelectorAll('.music-icon');
+            icons.forEach(i => {
+                i.className = isPlaying ? "music-icon fa-solid fa-volume-high" : "music-icon fa-solid fa-volume-xmark";
+            });
+        }
+
+        function confirmHome(yes) {
+            document.getElementById('modal-confirm-home').style.display = 'none';
+            if(yes) {
+                // Reset State
+                state = {
+                    gold: 0,
+                    missions: { masjid: false, makan: false, sekolah: false },
+                    currentLevel: 1,
+                    currentQuestionIndex: 0,
+                    currentQuestions: [],
+                    numPlayers: 1,
+                    players: [],
+                    currentPlayerIndex: 0
+                };
+                
+                // Reset UI Misi (Diperbarui Class-nya)
+                document.getElementById('img-masjid').className = "mission-locked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-slate-500 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink";
+                document.getElementById('status-masjid').className = "mt-auto bg-blue-600 text-white text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-white shadow-inner flex justify-center items-center";
+                document.getElementById('status-masjid').innerHTML = `Butuh 400 <img src="https://i.imgur.com/fGsPzlt.jpeg" class="w-5 h-5 lg:w-6 lg:h-6 rounded-full ml-2 border border-yellow-300">`;
+
+                document.getElementById('img-makan').className = "mission-locked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-slate-500 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink";
+                document.getElementById('status-makan').className = "mt-auto bg-slate-600 text-gray-300 text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-slate-500 shadow-inner flex justify-center items-center";
+                document.getElementById('status-makan').innerText = "Terkunci";
+
+                document.getElementById('img-sekolah').className = "mission-locked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-slate-500 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink";
+                document.getElementById('status-sekolah').className = "mt-auto bg-slate-600 text-gray-300 text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-slate-500 shadow-inner flex justify-center items-center";
+                document.getElementById('status-sekolah').innerText = "Terkunci";
+                
+                showScreen('screen-landing');
+            }
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // --- SISTEM PEMILIHAN PEMAIN & KARAKTER ---
+        function goToPlayerSetup() {
+            // Coba putar musik otomatis
+            if(bgMusic.paused) { bgMusic.play().then(() => updateMusicIcons(true)).catch(e => console.log(e)); }
+            
+            // Reset Setup
+            state.players = [];
+            setupPlayerIndex = 0;
+            document.getElementById('setup-step-count').style.display = 'flex';
+            document.getElementById('setup-step-char').style.display = 'none';
+            
+            showScreen('screen-player-setup');
+            soundCoin();
+        }
+        
+        function goBackToLandingFromSetup() {
+            showScreen('screen-landing');
+        }
+
+        function selectPlayerCount(num) {
+            state.numPlayers = num;
+            document.getElementById('setup-step-count').style.display = 'none';
+            document.getElementById('setup-step-char').style.display = 'flex';
+            soundCoin();
+            renderCharSelection();
+        }
+
+        function renderCharSelection() {
+            document.getElementById('setup-player-title').innerText = `Pemain ${setupPlayerIndex + 1}`;
+            
+            const container = document.getElementById('char-selection-container');
+            container.innerHTML = '';
+            
+            charactersData.forEach(c => {
+                // Cek apakah karakter ini sudah dipilih pemain lain
+                const isTaken = state.players.some(p => p.charId === c.id);
+                
+                const btn = document.createElement('button');
+                btn.className = `btn-ifp flex flex-col items-center p-4 rounded-3xl border-4 transition-all shadow-xl ${isTaken ? 'bg-slate-800 border-slate-600 grayscale opacity-60 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600 border-blue-400'}`;
+                btn.disabled = isTaken;
+                btn.onclick = () => selectCharacter(c.id);
+                
+                btn.innerHTML = `
+                    <div class="w-full h-32 lg:h-48 rounded-2xl mb-4 bg-slate-800/50 flex items-center justify-center overflow-hidden border-2 ${isTaken ? 'border-slate-500' : 'border-blue-300'}">
+                        <img src="${c.img}" class="w-full h-full object-contain">
+                    </div>
+                    <span class="text-2xl lg:text-3xl font-bold text-white">${c.name}</span>
+                    ${isTaken ? '<span class="text-red-400 font-bold mt-2 text-lg"><i class="fa-solid fa-lock"></i> Dipilih</span>' : '<span class="text-green-400 font-bold mt-2 text-lg"><i class="fa-solid fa-hand-pointer"></i> Pilih</span>'}
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectCharacter(charId) {
+            const charObj = charactersData.find(c => c.id === charId);
+            
+            // Tambahkan ke daftar pemain
+            state.players.push({
+                name: `Pemain ${setupPlayerIndex + 1}`,
+                realName: charObj.name,
+                charId: charObj.id,
+                avatar: charObj.img
+            });
+
+            setupPlayerIndex++;
+            soundCoin();
+
+            if (setupPlayerIndex < state.numPlayers) {
+                // Lanjut pemain berikutnya
+                renderCharSelection();
+            } else {
+                // Selesai, Mulai Game
+                startGame();
+            }
+        }
+
+        function startGame() {
+            state.currentPlayerIndex = 0;
+            updateMapUI();
+            showScreen('screen-map');
+            soundWin();
+        }
+
+        // --- SISTEM PETA MISI ---
+        function updateMapUI() {
+            document.getElementById('ui-gold').innerText = state.gold;
+            document.getElementById('quiz-gold').innerText = state.gold;
+
+            // Masjid
+            if(state.missions.masjid) {
+                document.getElementById('img-masjid').className = "mission-unlocked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-yellow-400 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink shadow-lg";
+                document.getElementById('status-masjid').className = "mt-auto bg-green-500 text-white text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-white shadow-inner flex justify-center items-center";
+                document.getElementById('status-masjid').innerText = "Selesai!";
+                
+                // Unlock Makan
+                if(!state.missions.makan) {
+                    document.getElementById('img-makan').classList.replace('mission-locked', 'mission-unlocked');
+                    document.getElementById('status-makan').className = "mt-auto bg-blue-600 text-white text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-white shadow-inner flex justify-center items-center";
+                    document.getElementById('status-makan').innerHTML = `Butuh 400 <img src="https://i.imgur.com/fGsPzlt.jpeg" class="w-5 h-5 lg:w-6 lg:h-6 rounded-full ml-2 border border-yellow-300">`;
+                }
+            }
+
+            // Makan
+            if(state.missions.makan) {
+                document.getElementById('img-makan').className = "mission-unlocked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-yellow-400 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink shadow-lg";
+                document.getElementById('status-makan').className = "mt-auto bg-green-500 text-white text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-white shadow-inner flex justify-center items-center";
+                document.getElementById('status-makan').innerText = "Selesai!";
+
+                // Unlock Sekolah
+                if(!state.missions.sekolah) {
+                    document.getElementById('img-sekolah').classList.replace('mission-locked', 'mission-unlocked');
+                    document.getElementById('status-sekolah').className = "mt-auto bg-blue-600 text-white text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-white shadow-inner flex justify-center items-center";
+                    document.getElementById('status-sekolah').innerHTML = `Butuh 400 <img src="https://i.imgur.com/fGsPzlt.jpeg" class="w-5 h-5 lg:w-6 lg:h-6 rounded-full ml-2 border border-yellow-300">`;
+                }
+            }
+
+            // Sekolah
+            if(state.missions.sekolah) {
+                document.getElementById('img-sekolah').className = "mission-unlocked w-full flex flex-col items-center justify-center bg-slate-900 rounded-xl border-4 border-yellow-400 overflow-hidden h-20 lg:h-32 xl:h-44 flex-shrink shadow-lg";
+                document.getElementById('status-sekolah').className = "mt-auto bg-green-500 text-white text-base lg:text-xl py-2 px-3 rounded-xl font-bold w-full border-2 border-white shadow-inner flex justify-center items-center";
+                document.getElementById('status-sekolah').innerText = "Selesai!";
+            }
+        }
+
+        function openMission(id) {
+            const meta = missionMeta[id];
+            
+            if(meta.prereq && !state.missions[meta.prereq]) {
+                soundWrong();
+                return;
+            }
+
+            document.getElementById('modal-mission').style.display = 'flex';
+            document.getElementById('modal-icon').innerHTML = meta.icon;
+            document.getElementById('modal-title').innerText = meta.title;
+            document.getElementById('modal-desc').innerText = meta.desc;
+
+            const actionContainer = document.getElementById('modal-action-container');
+            
+            if (state.missions[id]) {
+                actionContainer.innerHTML = `<div class="bg-green-500 text-white text-3xl lg:text-4xl py-4 px-8 lg:px-12 rounded-full font-bold shadow-lg border-4 border-white"><i class="fa-solid fa-check-circle mr-3"></i> Misi Telah Selesai!</div>`;
+            } else if (state.gold >= meta.cost) {
+                actionContainer.innerHTML = `<button onclick="buyMission('${id}')" class="btn-ifp bg-green-500 hover:bg-green-400 text-white text-3xl lg:text-4xl py-4 lg:py-6 px-10 lg:px-16 rounded-full font-bold border-4 border-white shadow-xl animate-pulse flex items-center"><i class="fa-solid fa-hammer mr-3"></i> Bangun Sekarang (${meta.cost} <img src="https://i.imgur.com/fGsPzlt.jpeg" class="w-8 h-8 rounded-full ml-2 border-2 border-yellow-300">)</button>`;
+            } else {
+                actionContainer.innerHTML = `<div class="bg-slate-700 text-yellow-300 text-2xl lg:text-3xl py-4 px-6 lg:px-10 rounded-full font-bold border-4 border-slate-500 shadow-inner flex items-center">Kumpulkan ${meta.cost - state.gold} <img src="https://i.imgur.com/fGsPzlt.jpeg" class="w-8 h-8 rounded-full mx-2 border border-yellow-300"> Lagi Untuk Membangun</div>`;
+            }
+        }
+
+        function closeMissionModal() {
+            document.getElementById('modal-mission').style.display = 'none';
+        }
+
+        function buyMission(id) {
+            const meta = missionMeta[id];
+            if(state.gold >= meta.cost && !state.missions[id]) {
+                state.gold -= meta.cost;
+                state.missions[id] = true;
+                soundBuild();
+                closeMissionModal();
+                updateMapUI();
+                
+                // Tampilkan Pop-up Keberhasilan Khusus Per Misi
+                document.getElementById('success-mission-title').innerText = `${meta.title} Berhasil!`;
+                document.getElementById('success-mission-img').src = meta.successImg;
+                document.getElementById('modal-success').style.display = 'flex';
+            }
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('modal-success').style.display = 'none';
+            
+            // Cek apakah SEMUA misi utama sudah selesai
+            if (state.missions.masjid && state.missions.makan && state.missions.sekolah) {
+                soundWin();
+                // Tampilkan pop up Final Hasil Singkat Misi
+                setTimeout(() => {
+                    document.getElementById('modal-all-complete').style.display = 'flex';
+                }, 300);
+            }
+        }
+        
+        function goToVictory() {
+            document.getElementById('modal-all-complete').style.display = 'none';
+            showScreen('screen-victory');
+            
+            // Suntikkan avatar pemain yang memenangkan game ke layar hasil akhir
+            const vpContainer = document.getElementById('victory-players');
+            vpContainer.innerHTML = '';
+            state.players.forEach(p => {
+                vpContainer.innerHTML += `
+                    <div class="flex flex-col items-center">
+                        <img src="${p.avatar}" class="w-20 h-20 lg:w-28 lg:h-28 rounded-full border-4 border-yellow-400 object-contain bg-white mb-2 shadow-lg animate-bounce-in p-2">
+                        <span class="text-xl lg:text-2xl font-bold text-white text-shadow-sm">${p.name}</span>
+                        <span class="text-lg lg:text-xl text-yellow-300 font-bold">${p.realName}</span>
+                    </div>
+                `;
+            });
+
+            // Ubah teks pujian berdasarkan jumlah pemain
+            document.getElementById('victory-subtitle').innerText = state.numPlayers > 1 ? 'Kalian Pahlawan Kebaikan Sejati!' : 'Kamu Pahlawan Kebaikan Sejati!';
+        }
+
+        // --- QUIZ LOGIC ---
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function updateTurnUI() {
+            const currentPlayer = state.players[state.currentPlayerIndex];
+            document.getElementById('turn-avatar').src = currentPlayer.avatar;
+            document.getElementById('turn-name').innerText = `${currentPlayer.name} (${currentPlayer.realName})`;
+        }
+
+        function startLevel(level) {
+            closeMissionModal();
+            state.currentLevel = level;
+            state.currentQuestionIndex = 0;
+            
+            state.currentQuestions = [...questionBank[level]];
+            shuffleArray(state.currentQuestions);
+            
+            let winAmount = (level <= 2) ? 10 : (level <= 4) ? 15 : 20;
+            document.getElementById('quiz-title').innerText = `Level Kelas ${level}`;
+            
+            // Cegah error null jika element disembunyikan/dihapus
+            const mobileTitle = document.getElementById('quiz-title-mobile');
+            if (mobileTitle) {
+                mobileTitle.innerText = `Level Kelas ${level}`;
+            }
+
+            document.getElementById('quiz-rules').innerText = `Benar: +${winAmount} Emas | Salah: -5 Emas`;
+            
+            updateTurnUI(); // Tampilkan giliran pertama
+            loadQuestion();
+            showScreen('screen-quiz');
+        }
+
+        function loadQuestion() {
+            const qData = state.currentQuestions[state.currentQuestionIndex];
+            document.getElementById('question-number').innerText = `Soal ${state.currentQuestionIndex + 1} dari ${state.currentQuestions.length}`;
+            document.getElementById('question-text').innerText = qData.q;
+            
+            const optContainer = document.getElementById('options-container');
+            optContainer.innerHTML = '';
+            
+            qData.o.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-ifp bg-indigo-600 hover:bg-indigo-500 text-white text-xl lg:text-2xl xl:text-3xl p-4 lg:p-6 rounded-3xl font-bold border-4 border-indigo-300 text-left leading-snug shadow-md";
+                btn.innerText = optText;
+                btn.onclick = () => checkAnswer(index, qData.a);
+                optContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, correctIndex) {
+            let winGold = (state.currentLevel <= 2) ? 10 : (state.currentLevel <= 4) ? 15 : 20;
+            let loseGold = 5;
+
+            const overlay = document.getElementById('feedback-overlay');
+            const content = document.getElementById('feedback-content');
+            const icon = document.getElementById('feedback-icon');
+            const text = document.getElementById('feedback-text');
+            const subtext = document.getElementById('feedback-subtext');
+
+            overlay.style.display = 'flex';
+            
+            if(selectedIndex === correctIndex) {
+                state.gold += winGold;
+                soundCoin();
+                icon.className = "fa-solid fa-check-circle text-[8rem] lg:text-[10rem] text-green-400";
+                text.innerText = "Benar!";
+                text.className = "text-6xl lg:text-7xl font-bold text-green-400 text-shadow mb-4";
+                subtext.innerHTML = `+${winGold} <img src="https://i.imgur.com/fGsPzlt.jpeg" class="w-12 h-12 lg:w-16 lg:h-16 inline-block rounded-full border-4 border-yellow-200 object-cover shadow-sm">`;
+                subtext.className = "text-5xl lg:text-6xl font-bold text-yellow-300 mt-4 animate-bounce flex items-center justify-center gap-4";
+            } else {
+                state.gold = Math.max(0, state.gold - loseGold);
+                soundWrong();
+                icon.className = "fa-solid fa-times-circle text-[8rem] lg:text-[10rem] text-red-500";
+                text.innerText = "Kurang Tepat";
+                text.className = "text-6xl lg:text-7xl font-bold text-red-500 text-shadow mb-4";
+                subtext.innerHTML = `-${loseGold} <img src="https://i.imgur.com/fGsPzlt.jpeg" class="w-12 h-12 lg:w-16 lg:h-16 inline-block rounded-full border-4 border-red-200 object-cover shadow-sm grayscale opacity-80">`;
+                subtext.className = "text-5xl lg:text-6xl font-bold text-red-400 mt-4 animate-bounce flex items-center justify-center gap-4";
+            }
+
+            document.getElementById('quiz-gold').innerText = state.gold;
+            setTimeout(() => content.classList.replace('scale-0', 'scale-100'), 10);
+
+            setTimeout(() => {
+                content.classList.replace('scale-100', 'scale-0');
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    nextQuestion();
+                }, 300);
+            }, 1800);
+        }
+
+        function nextQuestion() {
+            state.currentQuestionIndex++;
+            
+            // Ganti Giliran Pemain
+            state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.numPlayers;
+            updateTurnUI();
+
+            if(state.currentQuestionIndex < state.currentQuestions.length) {
+                loadQuestion();
+            } else {
+                soundWin();
+                backToMap();
+            }
+        }
+
+        function backToMap() {
+            updateMapUI();
+            showScreen('screen-map');
+        }
+    </script>
+</body>
+</html>
